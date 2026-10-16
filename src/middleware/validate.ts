@@ -2,8 +2,9 @@ import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 
 const validate =
-  (schema: z.ZodType) => (req: Request, res: Response, next: NextFunction) => {
-    const result = schema.safeParse(req.body);
+  (schema: z.ZodType) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await schema.safeParseAsync(req.body);
 
     if (!result.success) {
       return res.status(400).json({

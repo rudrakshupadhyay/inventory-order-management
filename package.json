@@ -13,11 +13,11 @@
   "license": "ISC",
   "author": "",
   "type": "module",
-  "main": "dist/server.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "dev": "tsx watch src/server.ts",
+    "build": "prisma generate && tsc",
+    "start": "tsx dist/src/index.js",
+    "dev": "tsx watch src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
