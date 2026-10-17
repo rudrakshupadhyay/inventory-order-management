@@ -1,5 +1,3 @@
-import type { JwtPayload } from "jsonwebtoken";
-
 export interface RegisterRequestBody {
   name: string;
   username: string;
@@ -9,9 +7,4 @@ export interface RegisterRequestBody {
 export interface LoginRequestBody {
   username: string;
   password: string;
-}
-
-export interface AccessTokenPayload extends JwtPayload {
-  id: number;
-  sessionId: number;
 }

@@ -42,3 +42,26 @@ model Session {
   @@index([userId])
   @@index([refreshTokenHash])
 }
+
+model Product {
+  id          String     @id @default(uuid())
+  name        String
+  sku         String     @unique
+  description String?
+  price       Float
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  inventory   Inventory?
+
+  @@index([name])
+}
+
+model Inventory {
+  id                String   @id @default(uuid())
+  productId         String   @unique
+  stockQuantity     Int
+  lowStockThreshold Int
+  updatedAt         DateTime @updatedAt
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
