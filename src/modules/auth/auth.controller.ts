@@ -157,3 +157,103 @@ export const getme = async (req: Request, res: Response): Promise<void> => {
     res.status(401).json({ message: "Invalid or expired token" });
   }
 };
+
+export const refresh = async (req: Request, res: Response): Promise<void> => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    res.status(401).json({ message: "Refresh token is missing" });
+    return;
+  }
+
+  try {
+    const decoded: any = jwt.verify(refreshToken, config.jwtSecret as string);
+    const refreshTokenHash: string = crypto
+      .createHash("sha256")
+      .update(refreshToken)
+      .digest("hex");
+
+    const session = await prisma.session.findFirst({
+      where: { refreshTokenHash, revoked: false },
+    });
+
+    if (!session) {
+      res.status(401).json({ message: "Invalid or expired refresh token" });
+      return;
+    }
+
+    const accessToken: string = jwt.sign(
+      { id: decoded.id, sessionId: session.id },
+      config.jwtSecret as string,
+      { expiresIn: "15m" },
+    );
+
+    const newRefreshToken: string = jwt.sign(
+      { id: decoded.id },
+      config.jwtSecret as string,
+      { expiresIn: "7d" },
+    );
+
+    const newRefreshTokenHash: string = crypto
+      .createHash("sha256")
+      .update(newRefreshToken)
+      .digest("hex");
+
+    await prisma.session.update({
+      where: { id: session.id },
+      data: { refreshTokenHash: newRefreshTokenHash },
+    });
+
+    const isProduction = process.env.NODE_ENV === "production";
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: "/",
+    });
+
+    res.status(200).json({
+      message: "Token refreshed successfully",
+      accessToken,
+    });
+  } catch (error: unknown) {
+    console.error("Error refreshing token:", error);
+    res.status(401).json({ message: "Invalid or expired refresh token" });
+  }
+};
+
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    res.status(400).json({ message: "Refresh token is missing" });
+    return;
+  }
+
+  try {
+    const refreshTokenHash: string = crypto
+      .createHash("sha256")
+      .update(refreshToken)
+      .digest("hex");
+    const session = await prisma.session.findFirst({
+      where: { refreshTokenHash, revoked: false },
+    });
+    if (!session) {
+      res.status(400).json({ message: "Invalid or expired refresh token" });
+      return;
+    }
+
+    await prisma.session.update({
+      where: { id: session.id },
+      data: { revoked: true },
+    });
+
+    res.clearCookie("refreshToken", { path: "/" });
+
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error: unknown) {
+    console.error("Error logging out:", error);
+    res.status(500).json({ message: "Error occurred while logging out" });
+  }
+};
