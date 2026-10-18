@@ -13,12 +13,11 @@ export const getAllProducts = async (req: Request, res: Response) => {
   }
 };
 
-export const getProductById = async (req: Request, res: Response) => {
+export const getProductById = async (
+  req: Request<{ id: string }, {}, {}>,
+  res: Response,
+) => {
   const { id } = req.params;
-
-  if (!id || typeof id !== "string") {
-    return res.status(400).json({ message: "Invalid product ID" });
-  }
 
   try {
     const product = await prisma.product.findUnique({
@@ -66,10 +65,6 @@ export const updateProduct = async (
   const { id } = req.params;
   const { name, description, price, isActive } = req.body;
 
-  if (!id || typeof id !== "string") {
-    return res.status(400).json({ message: "Invalid product ID" });
-  }
-
   try {
     const existingProduct = await prisma.product.findUnique({
       where: { id },
@@ -99,12 +94,11 @@ export const updateProduct = async (
   }
 };
 
-export const deleteProduct = async (req: Request, res: Response) => {
+export const deleteProduct = async (
+  req: Request<{ id: string }, {}, {}>,
+  res: Response,
+) => {
   const { id } = req.params;
-
-  if (!id || typeof id !== "string") {
-    return res.status(400).json({ message: "Invalid product ID" });
-  }
 
   try {
     const deletedProduct = await prisma.product.delete({
