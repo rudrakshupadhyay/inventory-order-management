@@ -51,4 +51,9 @@ PATCH /api/orders/:orderId/cancel
 */
 router.patch("/:orderId/cancel", authenticate, orderController.cancelOrder);
 
+/*
+PATCH /api/orders/:orderId/deliver
+*/
+router.patch("/:orderId/deliver", authenticate, orderController.deliverOrder);
+
 export default router;

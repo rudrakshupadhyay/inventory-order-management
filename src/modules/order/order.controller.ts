@@ -291,8 +291,52 @@ export const cancelOrder = async (
       message: "Order cancelled successfully",
       canceledOrder,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error cancelling order:", error);
+    if (error instanceof Error) {
+      return res.status(400).json({
+        message: error.message,
+      });
+    }
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+export const deliverOrder = async (
+  req: Request<{ orderId: string }, {}, {}>,
+  res: Response,
+) => {
+  const { orderId } = req.params;
+
+  if (!orderId) {
+    return res.status(400).json({ message: "Order ID is required" });
+  }
+
+  try {
+    const deliveredOrder = await prisma.order.updateMany({
+      where: {
+        id: orderId,
+        status: "PENDING",
+      },
+      data: {
+        status: "DELIVERED",
+      },
+    });
+
+    if (!deliveredOrder) {
+      return res
+        .status(404)
+        .json({ message: "Order not found or already processed" });
+    }
+
+    return res.status(200).json({
+      message: "Order delivered successfully",
+      deliveredOrder,
+    });
+  } catch (error: unknown) {
+    console.error("Error delivering order:", error);
     if (error instanceof Error) {
       return res.status(400).json({
         message: error.message,
