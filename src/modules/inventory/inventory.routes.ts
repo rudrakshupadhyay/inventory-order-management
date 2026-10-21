@@ -21,6 +21,16 @@ router.post(
 );
 
 /*
+GET /api/inventory/:productId
+*/
+router.get(
+  "/:productId",
+  authenticate,
+  authorize(["ADMIN"]),
+  inventoryController.getInventoryByProductId,
+);
+
+/*
 PATCH /api/inventory/:productId/adjust
 */
 router.patch(

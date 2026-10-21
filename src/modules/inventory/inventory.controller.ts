@@ -57,31 +57,37 @@ export const adjustInventory = async (
         .json({ message: "Cannot adjust inventory for an inactive product" });
     }
 
-    const inventory = await prisma.inventory.findUnique({
-      where: { productId },
-    });
-
-    if (!inventory) {
-      return res.status(404).json({ message: "Inventory not found" });
-    }
-
-    if (inventory.stockQuantity + adjustment < 0) {
-      return res
-        .status(400)
-        .json({ message: "Insufficient stock for adjustment" });
-    }
-
-    const updatedInventory = await prisma.inventory.update({
-      where: { productId },
+    const result = await prisma.inventory.updateMany({
+      where: {
+        productId,
+        ...(adjustment < 0 ? { stockQuantity: { gte: -adjustment } } : {}),
+      },
       data: {
-        stockQuantity: inventory.stockQuantity + adjustment,
+        stockQuantity: {
+          increment: adjustment,
+        },
       },
     });
 
-    res.json({ message: "Inventory adjusted successfully", updatedInventory });
+    if (result.count !== 1) {
+      return res.status(400).json({
+        message: "Inventory not found or insufficient stock for adjustment",
+      });
+    }
+
+    const updatedInventory = await prisma.inventory.findUnique({
+      where: {
+        productId,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Inventory adjusted successfully",
+      updatedInventory,
+    });
   } catch (error: unknown) {
     console.error("Error adjusting inventory:", error);
-    res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -102,6 +108,34 @@ export const getLowStockProducts = async (_req: Request, res: Response) => {
     res.json({ lowStockProducts });
   } catch (error: unknown) {
     console.error("Error fetching low stock products:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getInventoryByProductId = async (
+  req: Request<{ productId: string }, {}, {}>,
+  res: Response,
+) => {
+  const { productId } = req.params;
+
+  if (productId === undefined) {
+    return res.status(400).json({ message: "Product ID is required" });
+  }
+
+  try {
+    const inventory = await prisma.inventory.findUnique({
+      where: {
+        productId,
+      },
+    });
+
+    if (!inventory) {
+      return res.status(404).json({ message: "Inventory not found" });
+    }
+
+    res.json({ inventory });
+  } catch (error: unknown) {
+    console.error("Error fetching inventory:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
